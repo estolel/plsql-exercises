@@ -1,0 +1,14 @@
+
+
+
+
+BEGIN
+    UPDATE hr.departments 
+    SET location_id = 3000
+    WHERE department_id = 696;
+    COMMIT;
+END;
+/
+
+SELECT * FROM HR.DEPARTMENTS WHERE DEPARTMENT_ID = 696;
+DELETE FROM HR.DEPARTMENTS WHERE DEPARTMENT_ID = 696;

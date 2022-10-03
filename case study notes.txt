@@ -1,0 +1,5 @@
+-we want to know the cost incurred for the specific BL
+
+-use cursor for job order cost
+
+Join tables then get uuid in other table
