@@ -1,16 +1,16 @@
 set serveroutput on;
 DROP PROCEDURE ADD_JOB;
 DROP PROCEDURE UPD_JOB;
+DROP PROCEDURE DEL_JOB;
 
-
-CREATE PROCEDURE ADD_JOB(new_job_id hr.jobs.job_id%type, new_job_title hr.jobs.job_title%type) 
+CREATE OR REPLACE PROCEDURE ADD_JOB(new_job_id hr.jobs.job_id%type, new_job_title hr.jobs.job_title%type) 
 IS
 BEGIN
 dbms_output.put_line('Adding job: '||new_job_id);
 INSERT INTO hr.jobs(job_id, job_title) values (new_job_id, new_job_title);
 END ADD_JOB;
 /
-CREATE PROCEDURE UPD_JOB(v_job_id hr.jobs.job_id%type, new_job_title hr.jobs.job_title%type)
+CREATE OR REPLACE PROCEDURE UPD_JOB(v_job_id hr.jobs.job_id%type, new_job_title hr.jobs.job_title%type)
 IS
 BEGIN
 dbms_output.put_line('Updating job: '||v_job_id);
@@ -20,7 +20,7 @@ when NO_DATA_FOUND then
     dbms_output.put_line('No job found with Job ID: '||v_job_id);
 END UPD_JOB;
 /
-CREATE PROCEDURE DEL_JOB(v_job_id hr.jobs.job_id%type)
+CREATE OR REPLACE PROCEDURE DEL_JOB(v_job_id hr.jobs.job_id%type)
 IS
 BEGIN
 dbms_output.put_line('Deleting job: '||v_job_id);
