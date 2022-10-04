@@ -4,6 +4,7 @@ create or replace procedure get_cmpltd_jobs
         
     
     IS
+    ttl_amt number(25,2);
     too_long exception;
     BEGIN
 
@@ -76,46 +77,46 @@ create or replace procedure get_cmpltd_jobs
              ir2owner.j_ordr_nt_uuid a
         WHERE b.n_t_ordr_uuid = a.j_ordr_uuid;        
         --AND   a.j_item_owner_uuid = b.n_t_job_uuid;
---        SELECT * FROM n_t_job_rvw;
+--        SELECT * FROM j_job_uuid;
 --        select * from j_item_basic_uuid;
 --        select * from j_item_job_uuid ORDER BY j_item_job_uuid DESC;
 --        select * from j_item_rvw WHERE j_item_owner_uuid = 2837529194618015;
+
         --table 3.1
 
-        delete from j_item_uuid;
-        INSERT INTO ir2owner.j_item_uuid(j_item_uuid)
-        SELECT a.j_item_uuid
-        FROM j_item_rvw a,
-             j_job_uuid b
-        WHERE a.j_item_owner_uuid = b.j_job_uuid;
+        delete from group48_j_item_uuid;
+        INSERT INTO ir2owner.group48_j_item_uuid(j_item_uuid, job_item_uuid)
+    SELECT a.j_item_uuid, b.j_job_uuid
+    FROM j_item_rvw a,
+     ir2owner.j_job_uuid b
+    WHERE a.j_item_owner_uuid = b.j_job_uuid;
+
 
         ----table 4
-        --DROP TABLE j_item_revised_uuid;
-        --CREATE TABLE j_item_revised_uuid (j_item_uuid NUMBER(20));
-        --INSERT INTO ir2owner.j_item_revised_uuid(j_item_uuid)
-        --SELECT b.j_item_uuid
-        --FROM j_revised_cost_rvw  a,
-        --     ir2owner.j_item_rvw b
-        --WHERE a.j_revised_cost_owner_uuid = b.j_item_uuid;
-        --
-        --select * from j_item_revised_uuid
-        --
-        ----table 5
-        --DROP TABLE j_item_addl_uuid;
-        --CREATE TABLE j_item_addl_uuid (j_item_uuid NUMBER(20));
-        --INSERT INTO ir2owner.j_item_addl_uuid(j_item_uuid)
-        --SELECT DISTINCT b.j_item_uuid
-        --FROM j_addl_cost_rvw a,
-        --     j_item_rvw      b
-        --WHERE a.j_addl_cost_owner_uuid = b.j_item_uuid;
-        --select * from j_item_addl_uuid
+        delete from grp48_revise_uuid;
+        INSERT INTO ir2owner.grp48_revise_uuid
+        SELECT  a.amt,
+                b.j_item_uuid,
+                b.job_item_uuid
+        FROM j_revised_cost_rvw a,
+             group48_j_item_uuid b
+        WHERE a.j_revised_cost_owner_uuid = b.j_item_uuid;
 
-
+        --table 5
+        delete from grp48_addl_uuid;
+        INSERT INTO ir2owner.grp48_addl_uuid
+        SELECT  a.amt,
+                b.j_item_uuid,
+                b.job_item_uuid
+        FROM j_addl_cost_rvw a,
+             group48_j_item_uuid b
+        WHERE a.j_addl_cost_owner_uuid = b.j_item_uuid;
+        commit;
 
         --table 
 
         delete from j_inv_job;
-        INSERT INTO j_inv_job ( ccy ,
+        INSERT INTO j_inv_job ( j_job_uuid, ccy ,
                         ttl_inv ,
                         j_ordr_cde ,
                         vendor_cde ,
@@ -124,7 +125,7 @@ create or replace procedure get_cmpltd_jobs
                         issu_dt_loc ,
                         actvy_dt_loc ,
                         usr)
-        SELECT b.ttl_amt_ccy, b.ttl_amt,a.j_ordr_cde,
+        SELECT a.j_job_uuid, b.ttl_amt_ccy, b.ttl_amt,a.j_ordr_cde,
                 a.vendor_cde,
                 a.vendor_name,
                 a.ofce_cde,
@@ -136,9 +137,28 @@ create or replace procedure get_cmpltd_jobs
              ir2owner.j_job_uuid a
         WHERE b.j_ordr_inv_uuid = c.j_ordr_inv_uuid
         AND   c.job_uuid       = a.j_job_uuid;
-        commit;
+
 --        select * from j_inv_job;
 --        select * from j_ordr_inv_item_basic_uuid
+          for object_record in (select * from j_inv_job)
+        loop
+            group48_get_revised_ttl( object_record.J_JOB_UUID, ttl_amt );
+
+            if sql%notfound then 
+                 group48_get_original_ttl( object_record.J_JOB_UUID, ttl_amt );
+            end if;
+
+            group48_get_addl_cost ( object_record.J_JOB_UUID, ttl_amt);
+
+            if ttl_amt is null then
+                ttl_amt:=0;
+            end if;
+
+            update j_inv_job set ttl = ttl_amt, ttl_uninv = ttl_amt - object_record.ttl_inv  where J_JOB_UUID = object_record.J_JOB_UUID;
+            dbms_output.put_line(object_record.J_JOB_UUID);
+
+        end loop;
+
 
     exception 
         when too_long then
