@@ -25,7 +25,7 @@ CREATE TABLE j_job_uuid (   j_job_uuid NUMBER(20),
                             actvy_dt_loc DATE,
                             usr NVARCHAR2(8));
                             
-CREATE TABLE j_item_uuid (j_item_uuid NUMBER(20));
+CREATE TABLE group48_j_item_uuid (j_item_uuid NUMBER(20), job_item_uuid NUMBER(20));
 
 drop table j_inv_job
 CREATE TABLE j_inv_job(  j_job_uuid NUMBER(20),

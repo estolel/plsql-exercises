@@ -125,7 +125,7 @@ create or replace procedure get_cmpltd_jobs
                         issu_dt_loc ,
                         actvy_dt_loc ,
                         usr)
-        SELECT a.j_job_uuid, b.ttl_amt_ccy, b.ttl_amt,a.j_ordr_cde,
+        SELECT a.j_job_uuid, b.ttl_amt_ccy, sum( b.ttl_amt ),a.j_ordr_cde,
                 a.vendor_cde,
                 a.vendor_name,
                 a.ofce_cde,
@@ -136,7 +136,14 @@ create or replace procedure get_cmpltd_jobs
              j_ordr_inv_item_entry_rvw    c,
              ir2owner.j_job_uuid a
         WHERE b.j_ordr_inv_uuid = c.j_ordr_inv_uuid
-        AND   c.job_uuid       = a.j_job_uuid;
+        AND   c.job_uuid       = a.j_job_uuid
+        group by a.j_job_uuid, b.ttl_amt_ccy,a.j_ordr_cde,
+                a.vendor_cde,
+                a.vendor_name,
+                a.ofce_cde,
+                a.issu_dt_loc,
+                a.actvy_dt_loc,
+                a.usr;
 
 --        select * from j_inv_job;
 --        select * from j_ordr_inv_item_basic_uuid
@@ -178,25 +185,25 @@ create or replace procedure group48_get_revised_ttl(in_job_id in j_inv_job.j_job
     is
         
     begin
-        select sum(cost_amt) into ttl from grp48_revise_uuid where job_id = in_job_id group by job_id ;
-        
+        select sum(cost_amt) into ttl from grp48_revise_uuid where job_id = in_job_id group by job_id ; 
+
     exception
     when no_data_found then
         DBMS_OUTPUT.PUT_LINE ('not found.');
-    end group48_get_revised_ttl;
-    
+end group48_get_revised_ttl;
+/
    
-   create or replace procedure group48_get_original_ttl(in_job_id in j_inv_job.j_job_uuid%type,
+create or replace procedure group48_get_original_ttl(in_job_id in j_inv_job.j_job_uuid%type,
     ttl out number )
     is
         
     begin
         select sum(orig_cost_amt) into ttl from j_item_rvw  where j_item_owner_uuid = in_job_id group by j_item_owner_uuid;
-        
+
     exception
     when no_data_found then
         DBMS_OUTPUT.PUT_LINE ('not found.');
-end group48_get_original_ttl;
+    end group48_get_original_ttl;
 /
 
 create or replace procedure group48_get_addl_cost
